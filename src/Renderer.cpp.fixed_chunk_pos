@@ -1,0 +1,171 @@
+#include "Renderer.h"
+#include <iostream>
+
+Renderer::Renderer(World* w) : world(w), mode(RenderMode::SOLID),
+    cameraPosition(0.0f, 0.0f, -5.0f), cameraYaw(0.0f), cameraPitch(0.0f) {
+}
+
+Renderer::~Renderer() {
+}
+
+void Renderer::init() {
+    // Initialize OpenGL settings
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+    
+    // Setup lighting
+    setupLighting();
+    
+    // Setup initial camera
+    setupCamera();
+}
+
+void Renderer::render() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    setupCamera();
+    renderWorld();
+    
+    glutSwapBuffers();
+}
+
+void Renderer::update(float deltaTime) {
+    // Update any animation or state
+}
+
+void Renderer::renderWorld() {
+    if (!world) return;
+    
+    // Render all chunks in the world
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+        for (int y = 0; y < WORLD_HEIGHT; y++) {
+            for (int z = 0; z < WORLD_DEPTH; z++) {
+                Chunk* chunk = world->getChunkAt(x, y, z);
+                if (chunk) {
+                    renderChunk(chunk);
+                }
+            }
+        }
+    }
+}
+
+void Renderer::renderChunk(Chunk* chunk) {
+    if (!chunk) return;
+    
+    // Render blocks in chunk
+    for (int x = 0; x < CHUNK_WIDTH; x++) {
+        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+            for (int z = 0; z < CHUNK_DEPTH; z++) {
+                Block& block = chunk->getBlock(x, y, z);
+                if (!block.isEmpty()) {
+                    renderBlock(block, x, y, z);
+                }
+            }
+        }
+    }
+}
+
+void Renderer::renderBlock(Block& block, int x, int y, int z) {
+    // Simple cube rendering
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    
+    // Set color based on block type
+    switch (block.type) {
+        case BlockType::GRASS:
+            glColor3f(0.0f, 1.0f, 0.0f);  // Green
+            break;
+        case BlockType::DIRT:
+            glColor3f(0.6f, 0.4f, 0.2f);  // Brown
+            break;
+        default:
+            glColor3f(0.8f, 0.8f, 0.8f);  // Gray
+    }
+    
+    // Render cube
+    glBegin(GL_QUADS);
+    
+    // Front face
+    glVertex3f(0, 0, 0);
+    glVertex3f(1, 0, 0);
+    glVertex3f(1, 1, 0);
+    glVertex3f(0, 1, 0);
+    
+    // Back face
+    glVertex3f(0, 0, 1);
+    glVertex3f(1, 0, 1);
+    glVertex3f(1, 1, 1);
+    glVertex3f(0, 1, 1);
+    
+    // Top face
+    glVertex3f(0, 1, 0);
+    glVertex3f(1, 1, 0);
+    glVertex3f(1, 1, 1);
+    glVertex3f(0, 1, 1);
+    
+    // Bottom face
+    glVertex3f(0, 0, 0);
+    glVertex3f(1, 0, 0);
+    glVertex3f(1, 0, 1);
+    glVertex3f(0, 0, 1);
+    
+    // Right face
+    glVertex3f(1, 0, 0);
+    glVertex3f(1, 1, 0);
+    glVertex3f(1, 1, 1);
+    glVertex3f(1, 0, 1);
+    
+    // Left face
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 1, 0);
+    glVertex3f(0, 1, 1);
+    glVertex3f(0, 0, 1);
+    
+    glEnd();
+    
+    glPopMatrix();
+}
+
+void Renderer::setupCamera() {
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    // Apply camera transformations
+    glRotatef(-cameraPitch, 1.0f, 0.0f, 0.0f);
+    glRotatef(-cameraYaw, 0.0f, 1.0f, 0.0f);
+    glTranslatef(-cameraPosition.x, -cameraPosition.y, -cameraPosition.z);
+}
+
+void Renderer::setupLighting() {
+    // Enable lighting
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    
+    // Set light position
+    GLfloat lightPosition[] = { 10.0f, 10.0f, 10.0f, 1.0f };
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+    
+    // Set light properties
+    GLfloat lightAmbient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat lightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    
+    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+}
+
+void Renderer::moveCamera(float dx, float dy, float dz) {
+    cameraPosition.x += dx;
+    cameraPosition.y += dy;
+    cameraPosition.z += dz;
+}
+
+void Renderer::rotateCamera(float yaw, float pitch) {
+    cameraYaw += yaw;
+    cameraPitch += pitch;
+    
+    // Clamp pitch to prevent flipping
+    if (cameraPitch > 89.0f) cameraPitch = 89.0f;
+    if (cameraPitch < -89.0f) cameraPitch = -89.0f;
+}

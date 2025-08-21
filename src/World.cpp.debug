@@ -1,0 +1,83 @@
+#include "World.h"
+#include "Chunk.h"
+#include "Block.h"
+
+World::World() : playerPosition(0.0f, 0.0f, 0.0f) {
+    // Initialize chunks vector
+    chunks.resize(WORLD_WIDTH, std::vector<std::vector<std::shared_ptr<Chunk>>>(
+        WORLD_HEIGHT, std::vector<std::shared_ptr<Chunk>>(WORLD_DEPTH)));
+}
+
+World::~World() {
+    // Clean up chunks
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+        for (int y = 0; y < WORLD_HEIGHT; y++) {
+            for (int z = 0; z < WORLD_DEPTH; z++) {
+                chunks[x][y][z].reset();
+            }
+        }
+    }
+}
+
+void World::generateWorld() {
+    // Create a simple flat world for testing
+    for (int x = 0; x < WORLD_WIDTH; x++) {
+        for (int y = 0; y < WORLD_HEIGHT; y++) {
+            for (int z = 0; z < WORLD_DEPTH; z++) {
+                // Create a new chunk at position
+                chunks[x][y][z] = std::make_shared<Chunk>(Vector3(x * CHUNK_WIDTH, y * CHUNK_HEIGHT, z * CHUNK_DEPTH));
+                
+                // Generate terrain
+                for (int bx = 0; bx < CHUNK_WIDTH; bx++) {
+                    for (int by = 0; by < 4; by++) {
+                        for (int bz = 0; bz < CHUNK_DEPTH; bz++) {
+                            if (by == 0) {
+                                chunks[x][y][z]->setBlock(bx, by, bz, Block(BlockType::GRASS));
+                            } else if (by < 3) {
+                                chunks[x][y][z]->setBlock(bx, by, bz, Block(BlockType::DIRT));
+                            } else {
+                                chunks[x][y][z]->setBlock(bx, by, bz, Block(BlockType::STONE));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void World::update() {
+    // Update world state
+}
+
+Chunk* World::getChunkAt(int x, int y, int z) {
+    // Convert world coordinates to chunk coordinates
+    int chunkX = x / CHUNK_WIDTH;
+    int chunkY = y / CHUNK_HEIGHT;
+    int chunkZ = z / CHUNK_DEPTH;
+    
+    // Bounds checking
+    if (chunkX >= 0 && chunkX < WORLD_WIDTH &&
+        chunkY >= 0 && chunkY < WORLD_HEIGHT &&
+        chunkZ >= 0 && chunkZ < WORLD_DEPTH) {
+        return chunks[chunkX][chunkY][chunkZ].get();
+    }
+    
+    return nullptr; // Chunk not found
+}
+
+Block* World::getBlockAt(int x, int y, int z) {
+    // Get chunk that contains this block
+    Chunk* chunk = getChunkAt(x, y, z);
+    if (chunk) {
+        // Convert world coordinates to chunk-relative coordinates
+        int localX = x % CHUNK_WIDTH;
+        int localY = y % CHUNK_HEIGHT;
+        int localZ = z % CHUNK_DEPTH;
+        
+        // Return reference to block
+        return &chunk->getBlock(localX, localY, localZ);
+    }
+    
+    return nullptr; // Block not found
+}
