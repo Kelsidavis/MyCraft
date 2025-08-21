@@ -2,6 +2,10 @@
 
 MyCraft is a Minecraft-inspired 3D game engine implemented in C++. This project demonstrates a basic structure and components needed for a 3D game engine with a focus on block-based world generation and rendering.
 
+
+[![Watch the video](https://img.youtube.com/vi/iQzcs1_5oGU/0.jpg)](https://youtu.be/iQzcs1_5oGU)
+
+
 ## Project Structure
 
 - `src/` - Source code files
